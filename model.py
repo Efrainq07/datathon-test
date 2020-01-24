@@ -4,6 +4,10 @@ import operator
 import keras
 import numpy as np
 import metric as met
+import random
+
+from keras.models import Sequential
+from keras.layers import Dense,Activation
 
 
 G = nx.Graph()
@@ -30,15 +34,24 @@ class InputTensor(object):
 
 tn = InputTensor()
 tn.metrics=[tn.format_function(met.vecinos_comunes),
-            tn.format_function(nx.jaccard_coefficient,netx=True) ]
+            tn.format_function(nx.jaccard_coefficient,netx=True),
+            tn.format_function(nx.resource_allocation_index,netx=True),
+            tn.format_function(nx.adamic_adar_index,netx=True),
+            tn.format_function(nx.preferential_attachment,netx=True)]
 
-print(tn.evaluate(G))
+X_train = tn.evaluate(G)
 
+Y_train = np.array([random.randint(0,2) for i in range(len(X_train))])
 
-'''
 model = Sequential([
-    Dense(32, input_shape=(784,)),
-    Activation('relu'),
+    Dense(32, input_shape=(len(tn.metrics),),activation='relu'),
     Dense(10),
-    Activation('softmax'),
-])'''
+    Dense(1,activation='sigmoid')
+])
+
+model.compile(loss='binary_crossentropy',
+                optimizer='rmsprop',
+                metrics=['binary_accuracy'])
+
+model.fit(X_train, Y_train, 
+          batch_size=len(X_train), epochs=10, verbose=1)
